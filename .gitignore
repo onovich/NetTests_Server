@@ -70,3 +70,6 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+NetTest_Server/bin/Debug/net7.0/publish
+NetTest_Server/bin
+NetTest_Server/obj
