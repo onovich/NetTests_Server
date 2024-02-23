@@ -9,28 +9,33 @@ namespace TcpServer {
 
         static void Main(string[] args) {
 
-            var server = new TcpListener(IPAddress.Loopback, 8080);
-            server.Start();
-            Console.WriteLine("Server has started on 127.0.0.1:8080.{0}Waiting for a connection...", Environment.NewLine);
+            // Establish the local endpoint for the socket.
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Loopback, 8080);
 
-            TcpClient client = server.AcceptTcpClient();
-            Console.WriteLine("A client connected.");
+            // Create a TCP/IP socket.
+            Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            NetworkStream stream = client.GetStream();
+            // Bind the socket to the local endpoint and listen for incoming connections.
+            try {
+                listener.Bind(localEndPoint);
+                listener.Listen(10);
 
-            // Send a message to the client    
-            string message = "Hello from the server!";
-            byte[] data = Encoding.ASCII.GetBytes(message);
+                Console.WriteLine("Server has started on 127.0.0.1:8080.\nWaiting for a connection...");
+                Socket handler = listener.Accept();
+                Console.WriteLine("A client connected.");
 
-            stream.Write(data, 0, data.Length);
-            Console.WriteLine("Sent: {0}", message);
+                // Send data to the client
+                string data = "Hello from the server!";
+                byte[] byteData = Encoding.ASCII.GetBytes(data);
 
-            // Shutdown and end connection
-            client.Close();
-            server.Stop();
+                handler.Send(byteData);
+                Console.WriteLine("Sent: {0}", data);
 
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
         }
-
     }
-
 }
