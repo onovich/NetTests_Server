@@ -17,11 +17,8 @@ public struct LoginReqMessage : IMessage<LoginReqMessage> {
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
-        int count = 8;
+        int count = ByteCounter.Count<int>() + ByteCounter.CountUTF8String(userToken);
         isCertain = false;
-        if (userToken != null) {
-            count += userToken.Length * 4;
-        }
         return count;
     }
 

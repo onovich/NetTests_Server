@@ -20,13 +20,8 @@ public struct LoginResMessage : IMessage<LoginResMessage> {
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
-        int count = 9;
+        int count = ByteCounter.Count<int>() + ByteCounter.Count<sbyte>() + ByteCounter.CountUTF8String(userToken);
         isCertain = false;
-
-        if (userToken != null) {
-            count += userToken.Length * 4;
-        }
-
         return count;
     }
 

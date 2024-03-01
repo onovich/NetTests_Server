@@ -18,7 +18,7 @@ public struct ConnectResMessage : IMessage<ConnectResMessage> {
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
-        int count = 4;
+        int count = ByteCounter.Count<int>();
         isCertain = true;
         return count;
     }
