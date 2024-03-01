@@ -6,7 +6,7 @@ public struct CloseReqMessage : IMessage<CloseReqMessage> {
     public int id;
 
     public void WriteTo(byte[] dst, ref int offset) {
-        ByteWritter.Write<int>(dst, id, ref offset);
+        ByteWriter.Write<int>(dst, id, ref offset);
     }
 
     public void FromBytes(byte[] src, ref int offset) {

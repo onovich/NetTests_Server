@@ -8,15 +8,15 @@ public struct LoginResMessage : IMessage<LoginResMessage> {
     public string userToken;
 
     public void WriteTo(byte[] dst, ref int offset) {
-        ByteWritter.Write<int>(dst, id, ref offset);
-        ByteWritter.Write<sbyte>(dst, status, ref offset);
-        ByteWritter.WriteString(dst, userToken, ref offset);
+        ByteWriter.Write<int>(dst, id, ref offset);
+        ByteWriter.Write<sbyte>(dst, status, ref offset);
+        ByteWriter.WriteUTF8String(dst, userToken, ref offset);
     }
 
     public void FromBytes(byte[] src, ref int offset) {
         id = ByteReader.Read<int>(src, ref offset);
         status = ByteReader.Read<sbyte>(src, ref offset);
-        userToken = ByteReader.ReadString(src, ref offset);
+        userToken = ByteReader.ReadUTF8String(src, ref offset);
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
