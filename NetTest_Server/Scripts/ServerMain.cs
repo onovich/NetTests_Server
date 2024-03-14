@@ -140,8 +140,9 @@ class ServerMain {
 
                 ByteWriter.Write<int>(data, len, ref offset);
                 ByteWriter.Write<byte>(data, id, ref offset);
-                ByteWriter.WriteArray<byte>(data, src, ref offset);
-                Console.WriteLine("Send Message: ID = " + id.ToString() + " Len = " + len.ToString() + " Type = " + message.GetType());
+                // ByteWriter.WriteArray<byte>(data, src, ref offset);
+                Buffer.BlockCopy(src, 0, data, offset, src.Length);
+                offset += src.Length;
             }
             if (offset > 0) {
                 handler.Send(data, 0, offset, SocketFlags.None);
