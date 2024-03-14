@@ -1,23 +1,20 @@
 using System;
 using MortiseFrame.LitIO;
 
-public struct LoginReqMessage : IMessage<LoginReqMessage> {
+public struct LoginReqMessage : IMessage {
 
-    public int id;
     public string userToken;
 
     public void WriteTo(byte[] dst, ref int offset) {
-        ByteWriter.Write<int>(dst, id, ref offset);
         ByteWriter.WriteUTF8String(dst, userToken, ref offset);
     }
 
     public void FromBytes(byte[] src, ref int offset) {
-        id = ByteReader.Read<int>(src, ref offset);
         userToken = ByteReader.ReadUTF8String(src, ref offset);
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
-        int count = ByteCounter.Count<int>() + ByteCounter.CountUTF8String(userToken);
+        int count = ByteCounter.CountUTF8String(userToken);
         isCertain = false;
         return count;
     }

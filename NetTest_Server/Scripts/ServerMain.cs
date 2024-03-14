@@ -3,15 +3,18 @@ using System.Net.Sockets;
 using MortiseFrame.LitIO;
 
 class ClientState {
-    public Socket? socket;
+    public Socket socket;
 }
 
 class ServerMain {
 
-    static Socket? listenfd;
-    static Socket? clientfd;
+    static Socket listenfd;
+    static Socket clientfd;
     static Dictionary<Socket, ClientState> clients = new Dictionary<Socket, ClientState>();
     static Dictionary<Socket, string> userTokens = new Dictionary<Socket, string>();
+    static Queue<IMessage> messageQueue = new Queue<IMessage>();
+    static List<Socket> checkReadList = new List<Socket>();
+    static byte[] readBuff = new byte[1024];
 
     static void Main(string[] args) {
 
@@ -28,44 +31,9 @@ class ServerMain {
             Console.WriteLine("Server has started on 127.0.0.1:8080.\nWaiting for a connection...");
 
             while (true) {
-                // 检查 listener 是否有新的连接
-                if (listenfd.Poll(0, SelectMode.SelectRead)) {
-                    AcceptAndBakeListenfd(listenfd);
-                }
-                // 检查 clients 是否有新的消息
-                foreach (var client in clients.Values) {
-                    Socket? handler = client.socket;
-                    if (handler == null) {
-                        continue;
-                    }
-                    if (handler.Poll(0, SelectMode.SelectRead)) {
-                        byte[] data = new byte[1024];
-                        int count = handler.Receive(data);
-                        int offset = 0;
-                        int id = ByteReader.Read<int>(data, ref offset);
-                        switch (id) {
-                            case 1:
-                                OnLoginReq(handler, data);
-                                break;
-                            case 2:
-                                break;
-                            case -1:
-                                OnClose(handler);
-                                break;
-                            case 0:
-                                break;
-                            default:
-                                Console.WriteLine("Unknown message id: {0}", id);
-                                break;
-                        }
-                    }
-                }
-
-                // 防止 CPU 占用过高
-                System.Threading.Thread.Sleep(1);
+                TickOn();
+                TickSend();
             }
-
-
 
         } catch (Exception e) {
             Console.WriteLine(e.ToString());
@@ -82,30 +50,25 @@ class ServerMain {
         OnConnectReq(clientfd, data);
     }
 
-    static void OnClose(Socket handler) {
+    static void OnCloseReq(Socket handler) {
         Console.WriteLine("Client Disconnected");
         handler.Shutdown(SocketShutdown.Both);
         handler.Close();
     }
-
     static void OnConnectReq(Socket handle, byte[] data) {
         SendConnectRes(handle);
     }
 
     static void SendConnectRes(Socket handler) {
         ConnectResMessage message = new ConnectResMessage();
-        message.id = 100;
-        byte[] data = message.ToBytes();
-        handler.Send(data);
-        Console.WriteLine("Send ConnectRes");
+        messageQueue.Enqueue(message);
     }
 
-    static void OnLoginReq(Socket handler, byte[] data) {
-        int offset = 0;
+    static void OnLoginReq(Socket handler, byte[] data, ref int offset) {
         LoginReqMessage message = new LoginReqMessage();
         message.FromBytes(data, ref offset);
         Console.WriteLine("Received Login: {0}", message.userToken);
-        string? userToken = message.userToken;
+        string userToken = message.userToken;
         if (userToken == null) {
             Console.WriteLine("UserToken is Null");
             return;
@@ -114,13 +77,83 @@ class ServerMain {
         SendLoginRes(handler);
     }
 
+    static async void TickOn() {
+        checkReadList.Clear();
+        checkReadList.Add(listenfd);
+        foreach (var client in clients.Values) {
+            checkReadList.Add(client.socket);
+        }
+        Socket.Select(checkReadList, null, null, 1000);
+
+        foreach (Socket s in checkReadList) {
+            if (s == listenfd) {
+                AcceptAndBakeListenfd(listenfd);
+            } else {
+                int count = await s.ReceiveAsync(readBuff);
+                var offset = 0;
+                int msgCount = ByteReader.Read<int>(readBuff, ref offset);
+                for (int i = 0; i < msgCount; i++) {
+                    int len = ByteReader.Read<int>(readBuff, ref offset);
+                    if (len < 5) {
+                        break;
+                    }
+                    byte id = ByteReader.Read<byte>(readBuff, ref offset);
+                    Console.WriteLine("Receive Message: ID = " + id.ToString() + " Len = " + len.ToString());
+                    On(id, s, readBuff, ref offset);
+                }
+            }
+
+            System.Threading.Thread.Sleep(1);
+        }
+    }
+
+    static void On(byte id, Socket handler, byte[] data, ref int offset) {
+        switch (id) {
+            case 104:
+                Console.WriteLine("On Login Req");
+                OnLoginReq(handler, data, ref offset);
+                break;
+            case 101:
+                Console.WriteLine("On Close Req");
+                OnCloseReq(handler);
+                break;
+            default:
+                Console.WriteLine("Unknown message id: {0}", id);
+                break;
+        }
+    }
+
+    static void TickSend() {
+        foreach (var client in clients.Values) {
+            Socket handler = client.socket;
+            if (handler == null) {
+                continue;
+            }
+            byte[] data = new byte[1024];
+            int offset = 0;
+            int msgCount = messageQueue.Count;
+            ByteWriter.Write<int>(data, msgCount, ref offset);
+            while (messageQueue.TryDequeue(out IMessage message)) {
+                byte[] src = message.ToBytes();
+                int len = src.Length + 5;
+                byte id = ProtocolDict.GetID(message);
+
+                ByteWriter.Write<int>(data, len, ref offset);
+                ByteWriter.Write<byte>(data, id, ref offset);
+                ByteWriter.WriteArray<byte>(data, src, ref offset);
+                Console.WriteLine("Send Message: ID = " + id.ToString() + " Len = " + len.ToString() + " Type = " + message.GetType());
+            }
+            if (offset > 0) {
+                handler.Send(data, 0, offset, SocketFlags.None);
+            }
+        }
+    }
+
     static void SendLoginRes(Socket handler) {
         LoginResMessage message = new LoginResMessage();
-        message.id = 2;
         message.status = 1;
         message.userToken = userTokens[handler];
-        byte[] data = message.ToBytes();
-        handler.Send(data);
+        messageQueue.Enqueue(message);
     }
 
 }

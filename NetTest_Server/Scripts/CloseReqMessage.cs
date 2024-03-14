@@ -1,24 +1,16 @@
 using System;
 using MortiseFrame.LitIO;
 
-public struct CloseReqMessage : IMessage<CloseReqMessage> {
-
-    public int id;
+public struct CloseReqMessage : IMessage {
 
     public void WriteTo(byte[] dst, ref int offset) {
-        ByteWriter.Write<int>(dst, id, ref offset);
     }
 
     public void FromBytes(byte[] src, ref int offset) {
-        id = ByteReader.Read<int>(src, ref offset);
-    }
-
-    public byte GetID() {
-        return 0;
     }
 
     public int GetEvaluatedSize(out bool isCertain) {
-        int count = ByteCounter.Count<int>();
+        int count = 0;
         isCertain = true;
         return count;
     }
