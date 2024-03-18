@@ -1,5 +1,6 @@
 using System;
 using MortiseFrame.LitIO;
+using MortiseFrame.Rill;
 
 public struct ConnectResMessage : IMessage {
 
