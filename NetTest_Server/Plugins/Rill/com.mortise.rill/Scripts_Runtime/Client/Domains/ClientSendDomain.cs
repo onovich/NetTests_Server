@@ -10,6 +10,7 @@ namespace MortiseFrame.Rill {
         internal static void Enqueue(ClientContext ctx, IMessage msg) {
             ctx.Message_Enqueue(msg);
             RLog.Log("Client Enqueued: " + msg.GetType());
+            ctx.SendPending_Set();
         }
 
         // Send
@@ -22,7 +23,9 @@ namespace MortiseFrame.Rill {
             try {
 
                 while (ctx.Client.Connected) {
+                    ctx.SendPending_Reset();
                     SerializeAllAndSend(ctx);
+                    ctx.SendPending_WaitOne();
                 }
 
             } catch (ThreadAbortException) {
@@ -62,7 +65,6 @@ namespace MortiseFrame.Rill {
                 if (offset == 0) {
                     return;
                 }
-
                 ctx.Client.Send(buff, 0, offset, System.Net.Sockets.SocketFlags.None);
                 RLog.Log("Client Sent: " + message.GetType());
                 ctx.Buffer_Clear();

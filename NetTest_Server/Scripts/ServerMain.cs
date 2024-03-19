@@ -44,7 +44,6 @@ class ServerMain {
 
     static void OnCloseReq(CloseReqMessage msg, ConnectionEntity conn) {
         Console.WriteLine("Client Disconnected");
-        conn.clientfd.Shutdown(SocketShutdown.Both);
         conn.clientfd.Close();
     }
 
@@ -59,14 +58,15 @@ class ServerMain {
             Console.WriteLine("UserToken is Null");
             return;
         }
-        SendLoginRes(conn);
         userTokens[conn] = userToken;
+        SendLoginRes(conn);
         Console.WriteLine("User Login Success: " + userToken);
     }
 
     static void SendConnectRes(ConnectionEntity conn) {
         ConnectResMessage message = new ConnectResMessage();
         serverCore.Send(message, conn);
+        Console.WriteLine("Send ConnectRes");
     }
 
     static void SendLoginRes(ConnectionEntity conn) {
@@ -74,6 +74,7 @@ class ServerMain {
         message.status = 1;
         message.userToken = userTokens[conn];
         serverCore.Send(message, conn);
+        Console.WriteLine("Send LoginRes");
     }
 
     static void Tick() {

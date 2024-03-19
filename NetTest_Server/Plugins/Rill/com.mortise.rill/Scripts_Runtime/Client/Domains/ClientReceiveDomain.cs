@@ -8,23 +8,27 @@ namespace MortiseFrame.Rill {
         internal static void ThreadTick_Receive(ClientContext ctx) {
 
             try {
-                byte[] buff = ctx.Buffer_Get();
-                var client = ctx.Client;
-                int count = client.Receive(buff);
-                if (count <= 0) {
-                    return;
+
+                while (true) {
+                    byte[] buff = ctx.Buffer_Get();
+                    var client = ctx.Client;
+                    int count = client.Receive(buff);
+                    if (count <= 0) {
+                        break;
+                    }
+
+                    var data = new byte[count];
+                    Buffer.BlockCopy(buff, 0, data, 0, count);
+                    Enqueue(ctx, data);
+
+                    ctx.Buffer_Clear();
                 }
-
-                var data = new byte[count];
-                Buffer.BlockCopy(buff, 0, data, 0, count);
-                Enqueue(ctx, data);
-
-                ctx.Buffer_Clear();
 
             } catch (Exception exception) {
                 RLog.Log(" ReceiveLoop: finished receive function for:" + exception);
             } finally {
                 ctx.Client.Close();
+                ctx.Evt.EmitDisconnect();
             }
 
         }
