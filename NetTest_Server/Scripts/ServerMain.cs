@@ -17,7 +17,6 @@ class ServerMain {
             Register();
 
             serverCore.Start(localEndPoint.Address, localEndPoint.Port);
-            Console.WriteLine("Server has started on 127.0.0.1:8080.\nWaiting for a connection...");
 
             while (true) {
                 Tick();
@@ -49,6 +48,7 @@ class ServerMain {
     }
 
     static void OnConnectReq(ConnectionEntity conn) {
+        Console.WriteLine("Receive A New Client Connect Request");
         SendConnectRes(conn);
     }
 
@@ -60,6 +60,7 @@ class ServerMain {
         }
         SendLoginRes(conn);
         userTokens[conn] = userToken;
+        Console.WriteLine("User Login Success: " + userToken);
     }
 
     static void SendConnectRes(ConnectionEntity conn) {
