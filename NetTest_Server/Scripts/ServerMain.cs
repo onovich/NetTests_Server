@@ -15,6 +15,7 @@ class ServerMain {
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Loopback, 8080);
             serverCore = new ServerCore();
             Register();
+            BindingEvent();
 
             serverCore.Start(localEndPoint.Address, localEndPoint.Port);
 
@@ -28,7 +29,7 @@ class ServerMain {
         }
     }
 
-    static void On() {
+    static void BindingEvent() {
         serverCore.OnConnect((conn) => OnConnectReq(conn));
         serverCore.On<LoginReqMessage>((msg, conn) => OnLoginReq((LoginReqMessage)msg, conn));
         serverCore.On<CloseReqMessage>((msg, conn) => OnCloseReq((CloseReqMessage)msg, conn));
